@@ -37,6 +37,7 @@ describe('Ad Auction Utility', () => {
     expect(result.winner).toBe('Advertiser D');
     expect(result.bidAmount).toBe(200);
     expect(result.winnerId).toBe('adv4');
+    expect(result.finalPrice).toBe(150);  // Second-highest bid (second-price logic)
   });
 
   test('should accept JSON string input and select winner', () => {
@@ -44,6 +45,7 @@ describe('Ad Auction Utility', () => {
     const result = runAuction(jsonInput);
     expect(result.winner).toBe('Advertiser D');
     expect(result.bidAmount).toBe(200);
+    expect(result.finalPrice).toBe(150);
   });
 
   test('should throw AuctionError for empty bids array', () => {
@@ -71,6 +73,7 @@ describe('Ad Auction Utility', () => {
     const result = runAuction(tieBids);
     expect(result.winner).toBe('A');
     expect(result.bidAmount).toBe(100);
+    expect(result.finalPrice).toBe(100);  // Second is also 100
   });
 
   // Test with sample data file
@@ -80,16 +83,19 @@ describe('Ad Auction Utility', () => {
     const result = runAuction(fileContent);
     expect(result.winner).toBe('Advertiser D');
     expect(result.bidAmount).toBe(200);
+    expect(result.finalPrice).toBe(150);  // Second-highest bid
   });
 
   // Advanced auction tests (new functionality)
   test('should select winner by highest effective score (bid * qualityScore) in advanced mode', () => {
     // In sample: A=80, B=135, C=120, D=140 -> D wins (140)
+    // Second by effective is B (135), so finalPrice = B's bid=150
     const result = runAdvancedAuction(sampleBids);
     expect(result.winner).toBe('Advertiser D');
     expect(result.bidAmount).toBe(200);
     expect(result.effectiveScore).toBe(140);  // 200 * 0.7
     expect(result.qualityScore).toBe(0.7);
+    expect(result.finalPrice).toBe(150);  // Second competitor's bid (second-price)
   });
 
   test('should accept JSON string in advanced auction', () => {
@@ -97,6 +103,7 @@ describe('Ad Auction Utility', () => {
     const result = runAdvancedAuction(jsonInput);
     expect(result.winner).toBe('Advertiser D');
     expect(result.effectiveScore).toBe(140);
+    expect(result.finalPrice).toBe(150);
   });
 
   test('should throw AuctionError for invalid qualityScore in advanced mode', () => {
@@ -120,6 +127,7 @@ describe('Ad Auction Utility', () => {
     const result = runAdvancedAuction(noQualityBids);
     expect(result.winner).toBe('A');
     expect(result.effectiveScore).toBe(100);  // bid * 1.0
+    expect(result.finalPrice).toBe(90);  // Second competitor's bid
   });
 
   test('should handle ties in advanced effective score by selecting first', () => {
@@ -130,5 +138,6 @@ describe('Ad Auction Utility', () => {
     const result = runAdvancedAuction(tieBids);
     expect(result.winner).toBe('A');
     expect(result.effectiveScore).toBe(100);
+    expect(result.finalPrice).toBe(100);  // Second's bid
   });
 });

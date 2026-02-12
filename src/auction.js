@@ -7,14 +7,20 @@
  */
 
 const { validateAuctionInput } = require('./utils/errorHandler');
-const { findHighestBidder, findHighestEffectiveScoreBidder } = require('./utils/auctionUtils');
+const { 
+  findHighestBidder, 
+  findHighestEffectiveScoreBidder, 
+  findRunnerUp 
+} = require('./utils/auctionUtils');
 
 /**
  * Runs an ad auction and selects the winner based on highest bid.
- * (Original implementation unchanged for backward compatibility.)
+ * Now uses second-price logic: winner pays the next highest competitor's bid
+ * (common in real ad systems like Vickrey auctions; not their own bid).
+ * (Backward compatible; finalPrice added to output.)
  * @param {string|object} input - Input JSON string or object containing array of bids.
  * Each bid should have: { id: string, name: string, bidAmount: number } (qualityScore optional, 0<qs<=1 if present)
- * @returns {object} { winner: string (name), bidAmount: number, winnerId: string }
+ * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, finalPrice: number }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */
 function runAuction(input) {
@@ -24,20 +30,27 @@ function runAuction(input) {
   // Use auction utils for core bidding logic
   const winner = findHighestBidder(bids);
 
+  // Second-price: find runner-up by bidAmount, winner pays their bid (0 if solo)
+  const runnerUp = findRunnerUp(bids, bid => bid.bidAmount);
+  const finalPrice = runnerUp ? runnerUp.bidAmount : 0;
+
   return {
     winner: winner.name,
     bidAmount: winner.bidAmount,
-    winnerId: winner.id
+    winnerId: winner.id,
+    finalPrice  // What winner actually pays (second-highest bid)
   };
 }
 
 /**
  * Runs an advanced ad auction selecting winner by effective score (bidAmount * qualityScore).
  * This extends basic functionality for real-world ranking (quality/relevance matters).
+ * Now also uses second-price logic: winner pays next highest competitor's bid
+ * (not their own; common in GSP/Vickrey-style auctions).
  * qualityScore is optional per-bid (validated 0 < qs <= 1.0; defaults to 1.0 internally for compat).
  * @param {string|object} input - Input JSON string or object containing array of bids.
  * Each bid should have: { id: string, name: string, bidAmount: number, qualityScore?: number (0<qs<=1) }
- * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, effectiveScore: number }
+ * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, effectiveScore: number, finalPrice: number, qualityScore: number }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */
 function runAdvancedAuction(input) {
@@ -48,16 +61,26 @@ function runAdvancedAuction(input) {
   const winner = findHighestEffectiveScoreBidder(bids);
 
   // Compute and include effective score in output for transparency
-  // (validation already ensures 0 < quality <=1 if provided)
-  const quality = (typeof winner.qualityScore === 'number' && winner.qualityScore > 0) ? winner.qualityScore : 1.0;
+  // (quality already validated in errorHandler; use directly or default 1.0)
+  const quality = winner.qualityScore || 1.0;
   const effectiveScore = winner.bidAmount * quality;
+
+  // Second-price for advanced: runner-up by *effective score* ranking, but pay their raw bidAmount
+  // (simple GSP variant; winner pays what next competitor bid)
+  const effectiveScoreFn = bid => {
+    const q = bid.qualityScore || 1.0;
+    return bid.bidAmount * q;
+  };
+  const runnerUp = findRunnerUp(bids, effectiveScoreFn);
+  const finalPrice = runnerUp ? runnerUp.bidAmount : 0;
 
   return {
     winner: winner.name,
     bidAmount: winner.bidAmount,
     winnerId: winner.id,
     effectiveScore,  // Added for advanced insight
-    qualityScore: winner.qualityScore || 1.0
+    qualityScore: quality,
+    finalPrice  // What winner actually pays (next competitor's bid)
   };
 }
 

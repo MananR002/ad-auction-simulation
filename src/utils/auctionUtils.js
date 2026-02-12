@@ -60,7 +60,40 @@ function findHighestEffectiveScoreBidder(bids) {
   return winner;  // Return original bid (without temp effectiveScore)
 }
 
+/**
+ * Finds the runner-up (second highest) bid based on a provided score function.
+ * Used for second-price auction logic (winner pays next competitor's price).
+ * Returns the second-place bid object or null if <2 bids.
+ * @param {Array} bids - Validated bids
+ * @param {Function} scoreFn - (bid) => number for ranking (e.g., b => b.bidAmount or effective)
+ * @returns {object|null} Runner-up bid or null
+ */
+function findRunnerUp(bids, scoreFn) {
+  if (!Array.isArray(bids) || bids.length < 2) {
+    return null;
+  }
+
+  // Find top two by score (simple O(n) pass)
+  let first = bids[0];
+  let second = bids[1];
+  if (scoreFn(second) > scoreFn(first)) {
+    [first, second] = [second, first];
+  }
+
+  for (let i = 2; i < bids.length; i++) {
+    const score = scoreFn(bids[i]);
+    if (score > scoreFn(first)) {
+      second = first;
+      first = bids[i];
+    } else if (score > scoreFn(second)) {
+      second = bids[i];
+    }
+  }
+  return second;
+}
+
 module.exports = {
   findHighestBidder,
-  findHighestEffectiveScoreBidder
+  findHighestEffectiveScoreBidder,
+  findRunnerUp
 };

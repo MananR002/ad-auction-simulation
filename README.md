@@ -5,10 +5,11 @@ A clean Node.js utility library for simulating ad auctions. Currently selects th
 ## Features
 
 - Accepts input as JSON string or JavaScript object array
-- Validates bid data (id, name, positive bidAmount)
-- Selects winner with highest bid (handles ties by selecting first occurrence)
-- Returns winner name, bid amount, and winner ID
-- Basic tests and demo included
+- Validates bid data (id, name, positive bidAmount; qualityScore 0<qs<=1 if present)
+- Selects winner with highest bid (basic) or quality-weighted effective score (advanced)
+- **Second-price auction**: Winner pays *next highest competitor's bid* (not own bid) for realism
+- Returns winner details + `finalPrice` (second-price payment)
+- Basic tests, demo, and full backward compatibility
 - Clean, modular structure
 
 ## Installation
@@ -29,14 +30,14 @@ const bids = [
 ];
 
 const basicResult = runAuction(bids);
-console.log(basicResult); // { winner: '...', bidAmount: ..., winnerId: '...' }
+console.log(basicResult); // Includes finalPrice (second-highest bid)
 
-// Advanced: real-world ranking with qualityScore influence (bid * qualityScore)
+// Advanced: real-world ranking with qualityScore influence (bid * qualityScore) + second-price
 const advResult = runAdvancedAuction(bids);
-console.log(advResult); // Includes effectiveScore
+console.log(advResult); // Includes effectiveScore + finalPrice
 ```
 
-**Note**: Backward compatible – basic mode ignores qualityScore; sample data now includes it.
+**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid.
 
 ## Sample Dataset
 

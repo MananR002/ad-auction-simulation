@@ -13,7 +13,7 @@ const sampleJson = fs.readFileSync(sampleDataPath, 'utf8');
 
 console.log('=== Ad Auction Simulation Demo ===\n');
 
-// Run basic auction with JSON string (unchanged)
+// Run basic auction with JSON string (now with second-price)
 console.log('1. Running BASIC auction with sample JSON input...');
 const result = runAuction(sampleJson);
 console.log('Basic Result:', result);
@@ -33,5 +33,5 @@ const bids = [
 const result2 = runAdvancedAuction(bids);
 console.log('Advanced Result:', result2);
 
-console.log('\nDemo completed successfully! Basic mode uses highest bid; advanced incorporates qualityScore for realistic ranking.');
-console.log('Implementation remains backward-compatible. Ready for more metrics (e.g., CTR weighting).');
+console.log('\nDemo completed successfully! Basic uses highest-bid rank + second-price payment; advanced uses quality-weighted rank + second-price.');
+console.log('Winner now pays *next competitor\'s bid* (not own bid) per real ad auction systems. Backward-compatible where possible.');
