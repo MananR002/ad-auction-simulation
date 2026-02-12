@@ -162,7 +162,7 @@ describe('Ad Auction Utility', () => {
     expect(result.finalPrice).toBe(100);  // Second's bid
   });
 
-  // Manager tests for multi-round with budget exhaustion
+  // Manager tests for multi-round with budget exhaustion + new filters
   test('should manage multi-round auctions with budget limits and exhaustion', () => {
     const manager = new AuctionManager(sampleBids);
     // Round 1: basic, expect D wins, deduct 150 from D's 800
@@ -178,12 +178,18 @@ describe('Ad Auction Utility', () => {
     expect(res2.finalPrice).toBe(150);
     expect(res2.remainingBudgets.adv4).toBe(500);  // 650-150
 
-    // Exhaust D by running more (assume more rounds)
-    // For test, manually exhaust and check no participate
-    manager.remainingBudgets.adv4 = 0;  // Simulate exhaust
+    // Test low-budget filter: set C budget < its bidAmount (120) -> filtered
+    manager.remainingBudgets.adv3 = 50;  // < bid=120
+    const resLowBudget = manager.runRound(false);
+    expect(resLowBudget.winner).not.toBe('Advertiser C');  // C filtered
+    expect(resLowBudget.activeBiddersCount).toBeLessThan(4);  // At least 1 filtered
+
+    // Exhaust D and check no active case
+    manager.remainingBudgets.adv4 = 0;
+    manager.remainingBudgets.adv1 = 0;
+    manager.remainingBudgets.adv2 = 0;
     const resExhaust = manager.runRound(false);
-    expect(resExhaust.message).toBeUndefined();  // Still others
-    expect(resExhaust.winner).not.toBe('Advertiser D');  // D out
-    expect(resExhaust.activeBiddersCount).toBe(3);
+    expect(resExhaust.message).toBe('No active bidders with sufficient remaining budget');
+    expect(resExhaust.winner).toBe(null);
   });
 });

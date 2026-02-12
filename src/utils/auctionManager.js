@@ -28,7 +28,8 @@ class AuctionManager {
   }
 
   /**
-   * Runs one auction round: filters active (budget >0) bidders, selects winner, deducts finalPrice.
+   * Runs one auction round: filters active (remainingBudget >= bidAmount) bidders, selects winner, deducts finalPrice.
+   * Prevents overspend and exhausted bidders from participating.
    * @param {boolean} useAdvanced - If true, uses quality-weighted ranking
    * @returns {object} Auction result + round info + updated budgets
    */
@@ -36,16 +37,17 @@ class AuctionManager {
     this.round++;
     const auctionFn = useAdvanced ? runAdvancedAuction : runAuction;
 
-    // Get current active bids (those with remainingBudget > 0)
+    // Get current *active* bids: remainingBudget >= bidAmount (prevents participation if can't cover potential finalPrice)
+    // This addresses overspend and ensures real-system feasibility (filter before auction).
     const activeBids = this.initialBids.filter(bid => {
       const remaining = this.remainingBudgets[bid.id];
-      return remaining !== undefined && remaining > 0;
+      return remaining !== undefined && remaining >= bid.bidAmount;
     });
 
     if (activeBids.length === 0) {
       return {
         round: this.round,
-        message: 'No active bidders with remaining budget',
+        message: 'No active bidders with sufficient remaining budget',
         winner: null,
         finalPrice: 0,
         remainingBudgets: { ...this.remainingBudgets }
@@ -56,9 +58,15 @@ class AuctionManager {
     const result = auctionFn(activeBids);
 
     // Deduct finalPrice from winner's remaining budget
+    // Validate finalPrice <= remaining to prevent overspend (clamp if somehow exceeds, e.g., edge case)
     const winnerId = result.winnerId;
     if (this.remainingBudgets[winnerId] !== undefined) {
-      this.remainingBudgets[winnerId] = Math.max(0, this.remainingBudgets[winnerId] - result.finalPrice);
+      const currentRemaining = this.remainingBudgets[winnerId];
+      if (result.finalPrice > currentRemaining) {
+        this.remainingBudgets[winnerId] = 0;  // Prevent overspend
+      } else {
+        this.remainingBudgets[winnerId] = currentRemaining - result.finalPrice;
+      }
     }
 
     return {
