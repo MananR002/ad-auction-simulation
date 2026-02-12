@@ -1,33 +1,37 @@
-const { runAuction, runAdvancedAuction } = require('../index');  // Import from main index for full library API
+const { runAuction, runAdvancedAuction, AuctionManager } = require('../index');  // Import from main index for full library API
 const { AuctionError } = require('../src/utils/errorHandler');
 const fs = require('fs');
 const path = require('path');
 
-// Sample bids updated to include qualityScore (for advanced tests; backward compat preserved)
+// Sample bids updated to include qualityScore + budget (for advanced/multi-round tests; backward compat preserved)
 const sampleBids = [
   {
     "id": "adv1",
     "name": "Advertiser A",
     "bidAmount": 100,
-    "qualityScore": 0.8
+    "qualityScore": 0.8,
+    "budget": 500
   },
   {
     "id": "adv2",
     "name": "Advertiser B",
     "bidAmount": 150,
-    "qualityScore": 0.9
+    "qualityScore": 0.9,
+    "budget": 1000
   },
   {
     "id": "adv3",
     "name": "Advertiser C",
     "bidAmount": 120,
-    "qualityScore": 1.0
+    "qualityScore": 1.0,
+    "budget": 300
   },
   {
     "id": "adv4",
     "name": "Advertiser D",
     "bidAmount": 200,
-    "qualityScore": 0.7
+    "qualityScore": 0.7,
+    "budget": 800
   }
 ];
 
@@ -156,5 +160,30 @@ describe('Ad Auction Utility', () => {
     expect(result.winner).toBe('A');
     expect(result.effectiveScore).toBe(100);
     expect(result.finalPrice).toBe(100);  // Second's bid
+  });
+
+  // Manager tests for multi-round with budget exhaustion
+  test('should manage multi-round auctions with budget limits and exhaustion', () => {
+    const manager = new AuctionManager(sampleBids);
+    // Round 1: basic, expect D wins, deduct 150 from D's 800
+    let res1 = manager.runRound(false);  // basic
+    expect(res1.winner).toBe('Advertiser D');
+    expect(res1.finalPrice).toBe(150);
+    expect(res1.remainingBudgets.adv4).toBe(650);  // 800-150
+    expect(res1.activeBiddersCount).toBe(4);
+
+    // Round 2: advanced, D still active, but simulate exhaustion over rounds
+    let res2 = manager.runRound(true);  // advanced
+    expect(res2.winner).toBe('Advertiser D');  // Still wins by effective
+    expect(res2.finalPrice).toBe(150);
+    expect(res2.remainingBudgets.adv4).toBe(500);  // 650-150
+
+    // Exhaust D by running more (assume more rounds)
+    // For test, manually exhaust and check no participate
+    manager.remainingBudgets.adv4 = 0;  // Simulate exhaust
+    const resExhaust = manager.runRound(false);
+    expect(resExhaust.message).toBeUndefined();  // Still others
+    expect(resExhaust.winner).not.toBe('Advertiser D');  // D out
+    expect(resExhaust.activeBiddersCount).toBe(3);
   });
 });

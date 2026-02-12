@@ -3,24 +3,28 @@
     "id": "adv1",
     "name": "Advertiser A",
     "bidAmount": 100,
-    "qualityScore": 0.8
+    "qualityScore": 0.8,
+    "budget": 500
   },
   {
     "id": "adv2",
     "name": "Advertiser B",
     "bidAmount": 150,
-    "qualityScore": 0.9
+    "qualityScore": 0.9,
+    "budget": 1000
   },
   {
     "id": "adv3",
     "name": "Advertiser C",
     "bidAmount": 120,
-    "qualityScore": 1.0
+    "qualityScore": 1.0,
+    "budget": 300
   },
   {
     "id": "adv4",
     "name": "Advertiser D",
     "bidAmount": 200,
-    "qualityScore": 0.7
+    "qualityScore": 0.7,
+    "budget": 800
   }
 ]

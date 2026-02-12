@@ -3,7 +3,7 @@
  * Now includes basic + advanced (qualityScore-influenced) auction modes.
  */
 
-const { runAuction, runAdvancedAuction } = require('./index');
+const { runAuction, runAdvancedAuction, AuctionManager } = require('./index');
 const fs = require('fs');
 const path = require('path');
 
@@ -33,5 +33,13 @@ const bids = [
 const result2 = runAdvancedAuction(bids);
 console.log('Advanced Result:', result2);
 
+// Multi-round demo with budget manager
+console.log('\n4. Multi-round simulation with AuctionManager (budget tracking)...');
+const manager = new AuctionManager(JSON.parse(sampleJson));  // Init from sample
+let round1 = manager.runRound(false);  // Basic
+console.log('Round 1 (basic):', { winner: round1.winner, finalPrice: round1.finalPrice, remainingD: round1.remainingBudgets.adv4 });
+let round2 = manager.runRound(true);  // Advanced
+console.log('Round 2 (advanced):', { winner: round2.winner, finalPrice: round2.finalPrice, remainingD: round2.remainingBudgets.adv4 });
+
 console.log('\nDemo completed successfully! Basic uses highest-bid rank + second-price payment; advanced uses quality-weighted rank + second-price.');
-console.log('Winner now pays *next competitor\'s bid* (not own bid) per real ad auction systems. Backward-compatible where possible.');
+console.log('Winner now pays *next competitor\'s bid* (not own bid) per real ad auction systems. AuctionManager prevents budget-exhausted advertisers from future rounds. Backward-compatible where possible.');

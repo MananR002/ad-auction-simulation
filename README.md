@@ -9,6 +9,7 @@ A clean Node.js utility library for simulating ad auctions. Currently selects th
 - Selects winner with highest bid (basic) or quality-weighted effective score (advanced)
 - **Second-price auction**: Winner pays *next highest competitor's bid* (not own bid) for realism
 - Returns winner details + `finalPrice` (second-price payment)
+- **Budget tracking**: `AuctionManager` for multi-round simulations; exhausts budgets, skips depleted advertisers
 - Basic tests, demo, and full backward compatibility
 - Clean, modular structure
 
@@ -37,7 +38,13 @@ const advResult = runAdvancedAuction(bids);
 console.log(advResult); // Includes effectiveScore + finalPrice
 ```
 
-**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid. Invalid qualityScore bids are filtered (winner selected from valids only if any remain).
+// Multi-round with budgets
+const { AuctionManager } = require('ad-auction-simulation');
+const manager = new AuctionManager(bids);  // Init with budgets
+const round1 = manager.runRound();  // Basic round
+const round2 = manager.runRound(true);  // Advanced
+
+**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid. Invalid qualityScore bids are filtered (winner selected from valids only if any remain). Budgets prevent over-spending across rounds.
 
 ## Sample Dataset
 
@@ -63,8 +70,9 @@ ad-auction-simulation/
 ├── src/
 │   ├── auction.js           # Core auction runner (thin, delegates to utils)
 │   └── utils/
-│       ├── errorHandler.js  # Centralized error handling & input validation
-│       └── auctionUtils.js  # Pure bidding logic (e.g., winner selection)
+│       ├── errorHandler.js  # Centralized error handling & input validation (now filters invalid qs/budgets)
+│       ├── auctionUtils.js  # Pure bidding logic (e.g., winner selection, runner-up)
+│       └── auctionManager.js  # Stateful multi-round + budget tracking
 ├── data/
 │   └── sample-bids.json     # Sample dataset
 ├── tests/

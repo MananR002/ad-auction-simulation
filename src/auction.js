@@ -19,7 +19,7 @@ const {
  * (common in real ad systems like Vickrey auctions; not their own bid).
  * (Backward compatible; finalPrice added to output.)
  * @param {string|object} input - Input JSON string or object containing array of bids.
- * Each bid should have: { id: string, name: string, bidAmount: number } (qualityScore optional, 0<qs<=1 if present)
+ * Each bid should have: { id: string, name: string, bidAmount: number, budget?: number (positive, optional for multi-round) } (qualityScore optional, 0<qs<=1 if present)
  * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, finalPrice: number }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */

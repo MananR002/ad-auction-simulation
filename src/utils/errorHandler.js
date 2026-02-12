@@ -76,11 +76,18 @@ function validateAuctionInput(input) {
         return false;
       }
     }
+    // budget optional (for multi-round tracking); if present must be positive number, else skip bid
+    if (bid.budget !== undefined) {
+      if (typeof bid.budget !== 'number' || bid.budget <= 0) {
+        // Skip invalid budget bids
+        return false;
+      }
+    }
     return true;
   });
 
   if (validBids.length === 0) {
-    throwAuctionError('No valid bids after filtering invalid qualityScores (or empty input)', 'NO_VALID_BIDS');
+    throwAuctionError('No valid bids after filtering invalid qualityScores/budgets (or empty input)', 'NO_VALID_BIDS');
   }
 
   return validBids;
