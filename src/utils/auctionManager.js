@@ -7,8 +7,8 @@
  * This enables simulation of real campaigns with budget limits.
  */
 
-const { validateAuctionInput } = require('./errorHandler');
 const { runAuction, runAdvancedAuction } = require('../auction');  // Note: relative from utils
+const { EventLogger } = require('./eventLogger');
 
 class AuctionManager {
   /**
@@ -25,21 +25,7 @@ class AuctionManager {
       }
     });
     this.round = 0;
-    this.events = [];  // Timeline for observability (all rounds)
-  }
-
-  /**
-   * Internal: log event to timeline for observability.
-   * @param {string} type - Event type e.g. 'ROUND_STARTED'
-   * @param {object} details - Event-specific info
-   */
-  addEvent(type, details = {}) {
-    this.events.push({
-      type,
-      timestamp: new Date().toISOString(),
-      round: this.round,
-      ...details
-    });
+    this.logger = new EventLogger();  // Dedicated logger for observability (clean separation)
   }
 
   /**
