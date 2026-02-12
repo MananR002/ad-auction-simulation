@@ -25,6 +25,21 @@ class AuctionManager {
       }
     });
     this.round = 0;
+    this.events = [];  // Timeline for observability (all rounds)
+  }
+
+  /**
+   * Internal: log event to timeline for observability.
+   * @param {string} type - Event type e.g. 'ROUND_STARTED'
+   * @param {object} details - Event-specific info
+   */
+  addEvent(type, details = {}) {
+    this.events.push({
+      type,
+      timestamp: new Date().toISOString(),
+      round: this.round,
+      ...details
+    });
   }
 
   /**
@@ -36,6 +51,15 @@ class AuctionManager {
   runRound(useAdvanced = false) {
     this.round++;
     const auctionFn = useAdvanced ? runAdvancedAuction : runAuction;
+    const roundEvents = [];  // Per-round observability timeline
+
+    // Log round start
+    roundEvents.push({
+      type: 'ROUND_STARTED',
+      timestamp: new Date().toISOString(),
+      mode: useAdvanced ? 'advanced' : 'basic',
+      totalBidders: this.initialBids.length
+    });
 
     // Get current *active* bids: remainingBudget > 0 (allows participation; rerun/disqualify handles if can't afford finalPrice post-auction)
     // This enables real-system fallback (disqualify + rerun if unaffordable).
@@ -44,13 +68,24 @@ class AuctionManager {
       return remaining !== undefined && remaining > 0;
     });
 
+    roundEvents.push({
+      type: 'BIDDERS_FILTERED',
+      activeBiddersCount: activeBids.length,
+      filteredOutCount: this.initialBids.length - activeBids.length
+    });
+
     if (activeBids.length === 0) {
+      roundEvents.push({
+        type: 'NO_ACTIVE_BIDDERS',
+        message: 'No active bidders with sufficient remaining budget'
+      });
       return {
         round: this.round,
         message: 'No active bidders with sufficient remaining budget',
         winner: null,
         finalPrice: 0,
-        remainingBudgets: { ...this.remainingBudgets }
+        remainingBudgets: { ...this.remainingBudgets },
+        events: roundEvents
       };
     }
 
@@ -62,45 +97,87 @@ class AuctionManager {
     const maxReruns = 5;  // Prevent infinite loop in edge cases (all bidders can't afford)
     let currentActive = [...activeBids];  // Copy for potential re-filter in reruns
     do {
+      roundEvents.push({
+        type: 'AUCTION_STARTED',
+        activeBiddersCount: currentActive.length,
+        rerun: rerunCount > 0
+      });
+
       // Run on current active
       result = auctionFn(currentActive);
       const winnerId = result.winnerId;
       const currentRemaining = this.remainingBudgets[winnerId];
 
+      roundEvents.push({
+        type: 'WINNER_SELECTED',
+        winnerId,
+        winnerName: result.winner,
+        bidAmount: result.bidAmount,
+        finalPrice: result.finalPrice,
+        remainingBefore: currentRemaining
+      });
+
       if (result.finalPrice <= currentRemaining) {
         // Can afford: deduct and done
         this.remainingBudgets[winnerId] = currentRemaining - result.finalPrice;
+        roundEvents.push({
+          type: 'BUDGET_DEDUCTED',
+          winnerId,
+          deducted: result.finalPrice,
+          remainingAfter: this.remainingBudgets[winnerId]
+        });
         break;
       } else {
         // Can't afford: disqualify (set 0), rerun among remaining active
         this.remainingBudgets[winnerId] = 0;
         rerunCount++;
+        roundEvents.push({
+          type: 'DISQUALIFIED',
+          winnerId,
+          reason: 'finalPrice > remainingBudget',
+          finalPrice: result.finalPrice,
+          remainingBefore: currentRemaining
+        });
         // Re-filter active (exclude now-disqualified)
         currentActive = currentActive.filter(bid => {
           const rem = this.remainingBudgets[bid.id];
-          return rem !== undefined && rem >= bid.bidAmount;
+          return rem !== undefined && rem > 0;
         });
       }
     } while (rerunCount < maxReruns && currentActive.length > 0);
 
     if (rerunCount >= maxReruns || currentActive.length === 0) {
       // Fallback if too many reruns or no active left
+      roundEvents.push({
+        type: 'MAX_RERUNS_REACHED',
+        rerunCount,
+        activeLeft: currentActive.length
+      });
       return {
         round: this.round,
         message: 'Max reruns reached or no affordable bidders left',
         winner: null,
         finalPrice: 0,
         remainingBudgets: { ...this.remainingBudgets },
-        activeBiddersCount: activeBids.length
+        activeBiddersCount: activeBids.length,
+        events: roundEvents
       };
     }
+
+    roundEvents.push({
+      type: 'ROUND_ENDED',
+      winner: result.winner,
+      finalPrice: result.finalPrice,
+      reruns: rerunCount
+    });
 
     return {
       round: this.round,
       ...result,
       remainingBudgets: { ...this.remainingBudgets },
       activeBiddersCount: activeBids.length,
-      reruns: rerunCount  // For debug/insight
+      reruns: rerunCount,  // For debug/insight
+      events: roundEvents  // Full timeline for this round
     };
   }
 

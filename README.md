@@ -9,7 +9,8 @@ A clean Node.js utility library for simulating ad auctions. Currently selects th
 - Selects winner with highest bid (basic) or quality-weighted effective score (advanced)
 - **Second-price auction**: Winner pays *next highest competitor's bid* (not own bid) for realism
 - Returns winner details + `finalPrice` (second-price payment)
-- **Budget tracking**: `AuctionManager` for multi-round simulations; exhausts budgets, skips depleted advertisers
+- **Budget tracking**: `AuctionManager` for multi-round simulations; exhausts budgets, skips depleted advertisers, supports disqualify+rerun on unaffordable
+- **Observability**: Per-round event timeline (ROUND_STARTED, BIDDERS_FILTERED, DISQUALIFIED, etc. with timestamps/details)
 - Basic tests, demo, and full backward compatibility
 - Clean, modular structure
 

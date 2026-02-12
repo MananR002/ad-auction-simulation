@@ -208,6 +208,15 @@ describe('Ad Auction Utility', () => {
     expect(res.finalPrice).toBe(50);
     expect(res.reruns).toBeGreaterThan(0);  // Disqualify/rerun happened
     expect(res.remainingBudgets.adv1).toBe(0);  // A disqualified
+
+    // Observability: check event timeline for this round
+    expect(Array.isArray(res.events)).toBe(true);
+    expect(res.events.length).toBeGreaterThan(4);
+    const eventTypes = res.events.map(e => e.type);
+    expect(eventTypes).toContain('ROUND_STARTED');
+    expect(eventTypes).toContain('BIDDERS_FILTERED');
+    expect(eventTypes).toContain('DISQUALIFIED');
+    expect(eventTypes).toContain('ROUND_ENDED');
   });
 });
 
