@@ -1,11 +1,15 @@
 /**
  * Ad Auction Simulation Library
- * Export the main auction function.
+ * Main entry point. Uses dedicated utilities for error handling and logic
+ * to keep the index clean and modular. Every component has its own utility
+ * file for better organization and debugging.
  */
 
 const { runAuction } = require('./src/auction');
+const { AuctionError } = require('./src/utils/errorHandler');
 
 module.exports = {
   runAuction,
-  // Future metrics can be added here
+  AuctionError,  // Exported for users to catch specific errors
+  // Future metrics (e.g., calculateScore utility) can be added here
 };

@@ -56,14 +56,17 @@ npm test
 
 ```
 ad-auction-simulation/
-├── index.js              # Main library export
+├── index.js                 # Main library export (re-exports utilities/errors)
 ├── src/
-│   └── auction.js        # Core auction logic
+│   ├── auction.js           # Core auction runner (thin, delegates to utils)
+│   └── utils/
+│       ├── errorHandler.js  # Centralized error handling & input validation
+│       └── auctionUtils.js  # Pure bidding logic (e.g., winner selection)
 ├── data/
-│   └── sample-bids.json  # Sample dataset
+│   └── sample-bids.json     # Sample dataset
 ├── tests/
-│   └── auction.test.js   # Test cases
-├── demo.js               # Demo script
+│   └── auction.test.js      # Test cases (covers errors too)
+├── demo.js                  # Demo script
 ├── package.json
 └── README.md
 ```

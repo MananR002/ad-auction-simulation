@@ -1,4 +1,5 @@
-const { runAuction } = require('../src/auction');
+const { runAuction } = require('../index');  // Import from main index for full library API
+const { AuctionError } = require('../src/utils/errorHandler');
 const fs = require('fs');
 const path = require('path');
 
@@ -40,16 +41,19 @@ describe('Ad Auction Utility', () => {
     expect(result.bidAmount).toBe(200);
   });
 
-  test('should throw error for empty bids array', () => {
+  test('should throw AuctionError for empty bids array', () => {
+    expect(() => runAuction([])).toThrow(AuctionError);
     expect(() => runAuction([])).toThrow('Bids must be a non-empty array');
   });
 
-  test('should throw error for invalid JSON', () => {
+  test('should throw AuctionError for invalid JSON', () => {
+    expect(() => runAuction('invalid json')).toThrow(AuctionError);
     expect(() => runAuction('invalid json')).toThrow('Invalid JSON input');
   });
 
-  test('should throw error for invalid bid data', () => {
+  test('should throw AuctionError for invalid bid data', () => {
     const invalidBids = [{ id: 'adv1', name: 'A', bidAmount: -10 }];
+    expect(() => runAuction(invalidBids)).toThrow(AuctionError);
     expect(() => runAuction(invalidBids)).toThrow('has invalid bidAmount');
   });
 
