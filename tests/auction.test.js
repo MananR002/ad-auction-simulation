@@ -105,6 +105,13 @@ describe('Ad Auction Utility', () => {
     expect(() => runAdvancedAuction(invalidBids)).toThrow('invalid qualityScore');
   });
 
+  test('should throw AuctionError for qualityScore >1 in advanced mode', () => {
+    // Tightened range validation: must be 0 < qs <=1
+    const invalidHighBids = [{ id: 'adv1', name: 'A', bidAmount: 100, qualityScore: 1.5 }];
+    expect(() => runAdvancedAuction(invalidHighBids)).toThrow(AuctionError);
+    expect(() => runAdvancedAuction(invalidHighBids)).toThrow('invalid qualityScore');
+  });
+
   test('should default qualityScore to 1.0 in advanced mode for backward compat', () => {
     const noQualityBids = [
       { id: 'adv1', name: 'A', bidAmount: 100 },
@@ -118,7 +125,7 @@ describe('Ad Auction Utility', () => {
   test('should handle ties in advanced effective score by selecting first', () => {
     const tieBids = [
       { id: 'adv1', name: 'A', bidAmount: 100, qualityScore: 1.0 },
-      { id: 'adv2', name: 'B', bidAmount: 50, qualityScore: 2.0 }  // effective=100
+      { id: 'adv2', name: 'B', bidAmount: 100, qualityScore: 1.0 }  // effective=100 (tie)
     ];
     const result = runAdvancedAuction(tieBids);
     expect(result.winner).toBe('A');

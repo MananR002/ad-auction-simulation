@@ -13,7 +13,7 @@ const { findHighestBidder, findHighestEffectiveScoreBidder } = require('./utils/
  * Runs an ad auction and selects the winner based on highest bid.
  * (Original implementation unchanged for backward compatibility.)
  * @param {string|object} input - Input JSON string or object containing array of bids.
- * Each bid should have: { id: string, name: string, bidAmount: number } (qualityScore optional)
+ * Each bid should have: { id: string, name: string, bidAmount: number } (qualityScore optional, 0<qs<=1 if present)
  * @returns {object} { winner: string (name), bidAmount: number, winnerId: string }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */
@@ -34,9 +34,9 @@ function runAuction(input) {
 /**
  * Runs an advanced ad auction selecting winner by effective score (bidAmount * qualityScore).
  * This extends basic functionality for real-world ranking (quality/relevance matters).
- * qualityScore is optional per-bid (defaults to 1.0 internally for compat).
+ * qualityScore is optional per-bid (validated 0 < qs <= 1.0; defaults to 1.0 internally for compat).
  * @param {string|object} input - Input JSON string or object containing array of bids.
- * Each bid should have: { id: string, name: string, bidAmount: number, qualityScore?: number }
+ * Each bid should have: { id: string, name: string, bidAmount: number, qualityScore?: number (0<qs<=1) }
  * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, effectiveScore: number }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */
@@ -48,6 +48,7 @@ function runAdvancedAuction(input) {
   const winner = findHighestEffectiveScoreBidder(bids);
 
   // Compute and include effective score in output for transparency
+  // (validation already ensures 0 < quality <=1 if provided)
   const quality = (typeof winner.qualityScore === 'number' && winner.qualityScore > 0) ? winner.qualityScore : 1.0;
   const effectiveScore = winner.bidAmount * quality;
 

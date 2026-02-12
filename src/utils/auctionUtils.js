@@ -30,7 +30,7 @@ function findHighestBidder(bids) {
  * Finds the winner based on effective score (bidAmount * qualityScore).
  * This simulates real-world ad auction ranking (e.g., Google Ads style)
  * where quality/relevance influences final rank beyond raw bid.
- * qualityScore should be a number (typically 0.0-1.0 or 1-10); defaults to 1.0 if missing.
+ * qualityScore (if provided) validated to 0 < qs <= 1.0; defaults to 1.0 if missing.
  * Handles ties by selecting first highest.
  * @param {Array} bids - Validated array of bid objects (with optional qualityScore)
  * @returns {object} Winner bid object
@@ -42,6 +42,7 @@ function findHighestEffectiveScoreBidder(bids) {
   }
 
   // Compute effective score for each (bid * quality; default quality=1.0 for backward compat)
+  // (validation already ensures 0 < quality <=1 if provided)
   const scoredBids = bids.map(bid => {
     const quality = (typeof bid.qualityScore === 'number' && bid.qualityScore > 0) ? bid.qualityScore : 1.0;
     return {

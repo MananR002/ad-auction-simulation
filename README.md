@@ -24,7 +24,7 @@ const { runAuction, runAdvancedAuction } = require('ad-auction-simulation');
 
 // Basic (unchanged): highest bid wins
 const bids = [
-  { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.9 },  // quality optional
+  { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.9 },  // quality optional; 0 < qs <=1 if provided
   { id: 'adv2', name: 'Advertiser B', bidAmount: 150 }
 ];
 

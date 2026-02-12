@@ -23,7 +23,7 @@ console.log('\n2. Running ADVANCED auction (bid * qualityScore) with sample...')
 const advResult = runAdvancedAuction(sampleJson);
 console.log('Advanced Result:', advResult);
 
-// Example with object input (no quality = defaults to 1.0)
+// Example with object input (no/mixed quality; must be 0 < qs <=1 if provided)
 console.log('\n3. Advanced auction with direct object (mixed quality)...');
 const bids = [
   { id: 'advX', name: 'TechCorp', bidAmount: 500, qualityScore: 0.95 },
