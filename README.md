@@ -1,18 +1,26 @@
 # Ad Auction Simulation Library
 
-A clean Node.js utility library for simulating ad auctions. Currently selects the winner based on the highest bid amount. Designed to be extensible for future metrics like click-through rate (CTR), ad quality score, etc.
+A clean Node.js utility library for simulating ad auctions with real-world features (highest-bid, quality-weighted ranking, second-price payments, budget tracking, multi-round, observability events, filtering).
+
+## Assumptions & Input Validation
+- Input: Valid JSON string or object array of bids `{id, name, bidAmount (>0), qualityScore? (0 < qs <=1), budget? (>0)}`
+- Invalid qs/budget bids are filtered/skipped (winner from valids if any; throw if none)
+- Core fields (id/name/bid) must be valid or throw
+- Second-price: Winner pays next competitor's bid (not own)
+- Budgets: Tracked across rounds; filter active (remaining >0); disqualify+rerun if unaffordable finalPrice
+- Events: Full timeline per round for observability/debug
+- Backward compatible with basic single-run
 
 ## Features
-
-- Accepts input as JSON string or JavaScript object array
-- Validates bid data (id, name, positive bidAmount; qualityScore 0<qs<=1 if present)
-- Selects winner with highest bid (basic) or quality-weighted effective score (advanced)
-- **Second-price auction**: Winner pays *next highest competitor's bid* (not own bid) for realism
-- Returns winner details + `finalPrice` (second-price payment)
-- **Budget tracking**: `AuctionManager` for multi-round simulations; exhausts budgets, skips depleted advertisers, supports disqualify+rerun on unaffordable
-- **Observability**: Per-round event timeline (ROUND_STARTED, BIDDERS_FILTERED, DISQUALIFIED, etc. with timestamps/details)
-- Basic tests, demo, and full backward compatibility
-- Clean, modular structure
+- Accepts input as JSON string or JS object array
+- Validates/filters bid data (positive bidAmount; optional qs/budget)
+- Selects winner: highest bid (basic) or bid*quality effective score (advanced)
+- **Second-price**: Winner pays next highest competitor's bid
+- **Budget tracking & multi-round**: `AuctionManager` exhausts budgets, skips depleted, disqualifies+reruns unaffordable
+- **Observability**: Event timeline (ROUND_STARTED, BIDDERS_FILTERED, DISQUALIFIED, etc. with timestamps/details)
+- Handles edges (ties, mixed invalid, exhaustion, no active)
+- Basic tests, full demos, modular utilities, backward compatibility
+- Clean structure for extensibility (future metrics like CTR)
 
 ## Installation
 
@@ -23,38 +31,37 @@ npm install
 ## Usage
 
 ```javascript
-const { runAuction, runAdvancedAuction } = require('ad-auction-simulation');
+const { runAuction, runAdvancedAuction, AuctionManager } = require('ad-auction-simulation');
 
-// Basic (unchanged): highest bid wins
+// Basic: highest bid + second-price
 const bids = [
-  { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.9 },  // quality optional; 0 < qs <=1 if provided
+  { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.9, budget: 500 },  // qs/budget optional
   { id: 'adv2', name: 'Advertiser B', bidAmount: 150 }
 ];
-
 const basicResult = runAuction(bids);
-console.log(basicResult); // Includes finalPrice (second-highest bid)
+console.log(basicResult);  // {..., finalPrice: ... }
 
-// Advanced: real-world ranking with qualityScore influence (bid * qualityScore) + second-price
+// Advanced + events
 const advResult = runAdvancedAuction(bids);
-console.log(advResult); // Includes effectiveScore + finalPrice
+console.log(advResult);  // Includes effectiveScore, finalPrice
+
+// Multi-round with budgets + observability
+const manager = new AuctionManager(bids);
+const roundRes = manager.runRound(true);  // Advanced
+console.log(roundRes.events);  // Full timeline array
 ```
 
-// Multi-round with budgets
-const { AuctionManager } = require('ad-auction-simulation');
-const manager = new AuctionManager(bids);  // Init with budgets
-const round1 = manager.runRound();  // Basic round
-const round2 = manager.runRound(true);  // Advanced
-
-**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid. Invalid qualityScore bids are filtered (winner selected from valids only if any remain). Budgets prevent over-spending across rounds.
+**Note**: Backward compatible (extended outputs). Sample includes qs/budget. Filters invalid, second-price payment, budget exhaustion with disqualify+rerun, full events for observability. See demos/ for all scenarios.
 
 ## Sample Dataset
 
 See `data/sample-bids.json` for example advertisers with bids.
 
-## Running Demo
+## Running Demos
 
 ```bash
-npm run demo
+npm run demo          # Basic demo
+node demos/full-demo.js  # Full scenarios + events timeline
 ```
 
 ## Running Tests
@@ -78,19 +85,21 @@ ad-auction-simulation/
 │   └── sample-bids.json     # Sample dataset
 ├── tests/
 │   └── auction.test.js      # Test cases (covers errors too)
-├── demo.js                  # Demo script
+├── demo.js                  # Basic demo
+├── demos/
+│   └── full-demo.js         # Comprehensive demo (all features + events)
 ├── package.json
 └── README.md
 ```
 
 ## Future Enhancements
 
-- **Implemented**: Quality score weighting in `runAdvancedAuction` (bid * qualityScore for realistic ranking)
-- Second-price auction
 - Reserve prices
-- A/B testing different strategies
-- Multi-metric scoring (e.g., combine CTR, relevance)
-- More validation and error handling
+- A/B testing strategies
+- Multi-metric scoring (e.g., CTR + relevance weighting)
+- Advanced GSP payment formulas
+- Integration with real ad platforms
+- More observability/metrics
 
 ## License
 
