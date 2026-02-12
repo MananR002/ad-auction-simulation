@@ -53,8 +53,10 @@ function validateAuctionInput(input) {
     throwAuctionError('Bids must be a non-empty array', 'EMPTY_BIDS');
   }
 
-  // Validate each bid
-  bids.forEach((bid, index) => {
+  // Validate and filter bids: keep only *valid* ones (core fields required; qs optional but if present must 0 < qs <=1).
+  // Invalid qs bids are *skipped* (filtered out) to allow winner selection from remaining valids per requirement.
+  // If no valids left, throw. Core invalids (id/name/bid) still throw immediately for strictness.
+  const validBids = bids.filter((bid, index) => {
     if (!bid || typeof bid !== 'object') {
       throwAuctionError(`Invalid bid at index ${index}`, 'INVALID_BID_OBJECT');
     }
@@ -67,16 +69,21 @@ function validateAuctionInput(input) {
     if (typeof bid.bidAmount !== 'number' || bid.bidAmount <= 0) {
       throwAuctionError(`Bid at index ${index} has invalid bidAmount (must be positive number)`, 'INVALID_BID_AMOUNT');
     }
-    // qualityScore is optional (for backward compat) but if present must be a number in range (0, 1]
-    // (normalized score typical in ad auctions; >0 and <=1.0)
+    // qualityScore optional; if present validate range (skip bid if invalid to allow mixed inputs per requirement)
     if (bid.qualityScore !== undefined) {
       if (typeof bid.qualityScore !== 'number' || bid.qualityScore <= 0 || bid.qualityScore > 1) {
-        throwAuctionError(`Bid at index ${index} has invalid qualityScore (must be number in range 0 < qualityScore <= 1 if provided)`, 'INVALID_QUALITY_SCORE');
+        // Instead of throw, skip this bid (filter out); allows selection from valid ones only
+        return false;
       }
     }
+    return true;
   });
 
-  return bids;
+  if (validBids.length === 0) {
+    throwAuctionError('No valid bids after filtering invalid qualityScores (or empty input)', 'NO_VALID_BIDS');
+  }
+
+  return validBids;
 }
 
 module.exports = {

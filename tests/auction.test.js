@@ -120,17 +120,20 @@ describe('Ad Auction Utility', () => {
   });
 
   // Specific test case requested: 4 bidders with mixed qualityScores (2 >1 invalid, 2 valid 0-1)
-  // Expect validation error (no final output possible due to strict range; checks error handling)
-  test('should throw AuctionError for mixed qualityScores (some >1) with 4 bidders', () => {
+  // Now filters to valids only (A/C), selects winner among them (C by effective score=108), no throw
+  test('should select winner from valid bidders only in mixed qualityScores (some >1) with 4 bidders', () => {
     const mixedBids = [
-      { id: 'adv1', name: 'A', bidAmount: 100, qualityScore: 0.8 },  // valid
-      { id: 'adv2', name: 'B', bidAmount: 150, qualityScore: 1.2 },  // >1 invalid
-      { id: 'adv3', name: 'C', bidAmount: 120, qualityScore: 0.9 },  // valid
-      { id: 'adv4', name: 'D', bidAmount: 200, qualityScore: 1.5 }   // >1 invalid
+      { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.8 },  // valid, effective=80
+      { id: 'adv2', name: 'Advertiser B', bidAmount: 150, qualityScore: 1.2 },  // >1 invalid -> filtered
+      { id: 'adv3', name: 'Advertiser C', bidAmount: 120, qualityScore: 0.9 },  // valid, effective=108
+      { id: 'adv4', name: 'Advertiser D', bidAmount: 200, qualityScore: 1.5 }   // >1 invalid -> filtered
     ];
-    expect(() => runAdvancedAuction(mixedBids)).toThrow(AuctionError);
-    expect(() => runAdvancedAuction(mixedBids)).toThrow('invalid qualityScore');
-    // Note: If all <=1, would compute winner by effective + finalPrice; validation prevents here
+    const result = runAdvancedAuction(mixedBids);
+    expect(result.winner).toBe('Advertiser C');  // Highest effective among valids
+    expect(result.bidAmount).toBe(120);
+    expect(result.effectiveScore).toBe(108);  // 120 * 0.9
+    expect(result.finalPrice).toBe(100);  // Second valid's bid (A)
+    expect(result.qualityScore).toBe(0.9);
   });
 
   test('should default qualityScore to 1.0 in advanced mode for backward compat', () => {

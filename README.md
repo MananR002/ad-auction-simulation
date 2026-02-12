@@ -37,7 +37,7 @@ const advResult = runAdvancedAuction(bids);
 console.log(advResult); // Includes effectiveScore + finalPrice
 ```
 
-**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid.
+**Note**: Backward compatible (original outputs extended with `finalPrice`); basic ignores qualityScore. Sample includes it. Second-price makes winner pay competitor's bid. Invalid qualityScore bids are filtered (winner selected from valids only if any remain).
 
 ## Sample Dataset
 

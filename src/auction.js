@@ -47,9 +47,10 @@ function runAuction(input) {
  * This extends basic functionality for real-world ranking (quality/relevance matters).
  * Now also uses second-price logic: winner pays next highest competitor's bid
  * (not their own; common in GSP/Vickrey-style auctions).
- * qualityScore is optional per-bid (validated 0 < qs <= 1.0; defaults to 1.0 internally for compat).
+ * qualityScore is optional per-bid (validated 0 < qs <= 1.0 if present; invalid qs bids are filtered/skipped so winner can be selected from valids).
+ * Defaults to 1.0 internally for compat.
  * @param {string|object} input - Input JSON string or object containing array of bids.
- * Each bid should have: { id: string, name: string, bidAmount: number, qualityScore?: number (0<qs<=1) }
+ * Each bid should have: { id: string, name: string, bidAmount: number, qualityScore?: number (0<qs<=1 if present) }
  * @returns {object} { winner: string (name), bidAmount: number, winnerId: string, effectiveScore: number, finalPrice: number, qualityScore: number }
  * @throws {AuctionError} if invalid input or no bids (from errorHandler utility)
  */
