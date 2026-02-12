@@ -178,13 +178,13 @@ describe('Ad Auction Utility', () => {
     expect(res2.finalPrice).toBe(150);
     expect(res2.remainingBudgets.adv4).toBe(500);  // 650-150
 
-    // Test low-budget filter: set C budget < its bidAmount (120) -> filtered
-    manager.remainingBudgets.adv3 = 50;  // < bid=120
+    // Test budget exhaustion filter: set C=0 -> filtered out
+    manager.remainingBudgets.adv3 = 0;
     const resLowBudget = manager.runRound(false);
-    expect(resLowBudget.winner).not.toBe('Advertiser C');  // C filtered
-    expect(resLowBudget.activeBiddersCount).toBeLessThan(4);  // At least 1 filtered
+    expect(resLowBudget.winner).not.toBe('Advertiser C');  // C out
+    expect(resLowBudget.activeBiddersCount).toBeLessThan(4);  // Filtered
 
-    // Exhaust D and check no active case
+    // Exhaust all and check no active case
     manager.remainingBudgets.adv4 = 0;
     manager.remainingBudgets.adv1 = 0;
     manager.remainingBudgets.adv2 = 0;
@@ -192,4 +192,22 @@ describe('Ad Auction Utility', () => {
     expect(resExhaust.message).toBe('No active bidders with sufficient remaining budget');
     expect(resExhaust.winner).toBe(null);
   });
+
+  // New test for disqualify + rerun scenario: top winner can't afford finalPrice -> disqualify, rerun selects next
+  test('should disqualify unaffordable winner and rerun auction', () => {
+    const testBids = [
+      { id: 'adv1', name: 'Advertiser A', bidAmount: 100, budget: 200 },  // Top bid, but we'll set low remaining
+      { id: 'adv2', name: 'Advertiser B', bidAmount: 80, budget: 500 },
+      { id: 'adv3', name: 'Advertiser C', bidAmount: 50, budget: 100 }
+    ];
+    const manager = new AuctionManager(testBids);
+    // Set A's remaining low=60 < finalPrice (B's 80); A participates ( >0) but can't afford post-win
+    manager.remainingBudgets.adv1 = 60;
+    const res = manager.runRound(false);  // basic
+    expect(res.winner).toBe('Advertiser B');  // Rerun after disqualify A, B wins (final now C=50)
+    expect(res.finalPrice).toBe(50);
+    expect(res.reruns).toBeGreaterThan(0);  // Disqualify/rerun happened
+    expect(res.remainingBudgets.adv1).toBe(0);  // A disqualified
+  });
 });
+

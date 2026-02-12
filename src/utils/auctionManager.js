@@ -37,11 +37,11 @@ class AuctionManager {
     this.round++;
     const auctionFn = useAdvanced ? runAdvancedAuction : runAuction;
 
-    // Get current *active* bids: remainingBudget >= bidAmount (prevents participation if can't cover potential finalPrice)
-    // This addresses overspend and ensures real-system feasibility (filter before auction).
+    // Get current *active* bids: remainingBudget > 0 (allows participation; rerun/disqualify handles if can't afford finalPrice post-auction)
+    // This enables real-system fallback (disqualify + rerun if unaffordable).
     const activeBids = this.initialBids.filter(bid => {
       const remaining = this.remainingBudgets[bid.id];
-      return remaining !== undefined && remaining >= bid.bidAmount;
+      return remaining !== undefined && remaining > 0;
     });
 
     if (activeBids.length === 0) {
@@ -54,26 +54,53 @@ class AuctionManager {
       };
     }
 
-    // Run auction on active only (re-uses existing logic/validation)
-    const result = auctionFn(activeBids);
-
-    // Deduct finalPrice from winner's remaining budget
-    // Validate finalPrice <= remaining to prevent overspend (clamp if somehow exceeds, e.g., edge case)
-    const winnerId = result.winnerId;
-    if (this.remainingBudgets[winnerId] !== undefined) {
+    // Run auction on active only (re-uses existing logic/validation).
+    // If winner can't afford finalPrice (real-system case), disqualify them (set budget=0) and *rerun* (re-filter active).
+    // Loop with safety limit to avoid infinite if all can't afford.
+    let result;
+    let rerunCount = 0;
+    const maxReruns = 5;  // Prevent infinite loop in edge cases (all bidders can't afford)
+    let currentActive = [...activeBids];  // Copy for potential re-filter in reruns
+    do {
+      // Run on current active
+      result = auctionFn(currentActive);
+      const winnerId = result.winnerId;
       const currentRemaining = this.remainingBudgets[winnerId];
-      if (result.finalPrice > currentRemaining) {
-        this.remainingBudgets[winnerId] = 0;  // Prevent overspend
-      } else {
+
+      if (result.finalPrice <= currentRemaining) {
+        // Can afford: deduct and done
         this.remainingBudgets[winnerId] = currentRemaining - result.finalPrice;
+        break;
+      } else {
+        // Can't afford: disqualify (set 0), rerun among remaining active
+        this.remainingBudgets[winnerId] = 0;
+        rerunCount++;
+        // Re-filter active (exclude now-disqualified)
+        currentActive = currentActive.filter(bid => {
+          const rem = this.remainingBudgets[bid.id];
+          return rem !== undefined && rem >= bid.bidAmount;
+        });
       }
+    } while (rerunCount < maxReruns && currentActive.length > 0);
+
+    if (rerunCount >= maxReruns || currentActive.length === 0) {
+      // Fallback if too many reruns or no active left
+      return {
+        round: this.round,
+        message: 'Max reruns reached or no affordable bidders left',
+        winner: null,
+        finalPrice: 0,
+        remainingBudgets: { ...this.remainingBudgets },
+        activeBiddersCount: activeBids.length
+      };
     }
 
     return {
       round: this.round,
       ...result,
       remainingBudgets: { ...this.remainingBudgets },
-      activeBiddersCount: activeBids.length
+      activeBiddersCount: activeBids.length,
+      reruns: rerunCount  // For debug/insight
     };
   }
 
