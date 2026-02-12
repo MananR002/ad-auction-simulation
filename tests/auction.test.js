@@ -119,6 +119,20 @@ describe('Ad Auction Utility', () => {
     expect(() => runAdvancedAuction(invalidHighBids)).toThrow('invalid qualityScore');
   });
 
+  // Specific test case requested: 4 bidders with mixed qualityScores (2 >1 invalid, 2 valid 0-1)
+  // Expect validation error (no final output possible due to strict range; checks error handling)
+  test('should throw AuctionError for mixed qualityScores (some >1) with 4 bidders', () => {
+    const mixedBids = [
+      { id: 'adv1', name: 'A', bidAmount: 100, qualityScore: 0.8 },  // valid
+      { id: 'adv2', name: 'B', bidAmount: 150, qualityScore: 1.2 },  // >1 invalid
+      { id: 'adv3', name: 'C', bidAmount: 120, qualityScore: 0.9 },  // valid
+      { id: 'adv4', name: 'D', bidAmount: 200, qualityScore: 1.5 }   // >1 invalid
+    ];
+    expect(() => runAdvancedAuction(mixedBids)).toThrow(AuctionError);
+    expect(() => runAdvancedAuction(mixedBids)).toThrow('invalid qualityScore');
+    // Note: If all <=1, would compute winner by effective + finalPrice; validation prevents here
+  });
+
   test('should default qualityScore to 1.0 in advanced mode for backward compat', () => {
     const noQualityBids = [
       { id: 'adv1', name: 'A', bidAmount: 100 },
