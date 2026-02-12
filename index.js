@@ -5,11 +5,12 @@
  * file for better organization and debugging.
  */
 
-const { runAuction } = require('./src/auction');
+const { runAuction, runAdvancedAuction } = require('./src/auction');
 const { AuctionError } = require('./src/utils/errorHandler');
 
 module.exports = {
-  runAuction,
+  runAuction,  // Original basic (highest bid) - unchanged
+  runAdvancedAuction,  // New: uses qualityScore for real-world ranking (bid * quality)
   AuctionError,  // Exported for users to catch specific errors
-  // Future metrics (e.g., calculateScore utility) can be added here
+  // Future metrics (e.g., more utils) can be added here
 };

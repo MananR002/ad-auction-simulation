@@ -20,21 +20,23 @@ npm install
 ## Usage
 
 ```javascript
-const { runAuction } = require('ad-auction-simulation');
+const { runAuction, runAdvancedAuction } = require('ad-auction-simulation');
 
-// Input as object
+// Basic (unchanged): highest bid wins
 const bids = [
-  { id: 'adv1', name: 'Advertiser A', bidAmount: 100 },
+  { id: 'adv1', name: 'Advertiser A', bidAmount: 100, qualityScore: 0.9 },  // quality optional
   { id: 'adv2', name: 'Advertiser B', bidAmount: 150 }
 ];
 
-const result = runAuction(bids);
-console.log(result); // { winner: 'Advertiser B', bidAmount: 150, winnerId: 'adv2' }
+const basicResult = runAuction(bids);
+console.log(basicResult); // { winner: '...', bidAmount: ..., winnerId: '...' }
 
-// Or as JSON string
-const jsonInput = JSON.stringify(bids);
-const result2 = runAuction(jsonInput);
+// Advanced: real-world ranking with qualityScore influence (bid * qualityScore)
+const advResult = runAdvancedAuction(bids);
+console.log(advResult); // Includes effectiveScore
 ```
+
+**Note**: Backward compatible – basic mode ignores qualityScore; sample data now includes it.
 
 ## Sample Dataset
 
@@ -73,10 +75,11 @@ ad-auction-simulation/
 
 ## Future Enhancements
 
-- Support for multiple metrics (e.g., weighted score: bid * qualityScore)
+- **Implemented**: Quality score weighting in `runAdvancedAuction` (bid * qualityScore for realistic ranking)
 - Second-price auction
 - Reserve prices
 - A/B testing different strategies
+- Multi-metric scoring (e.g., combine CTR, relevance)
 - More validation and error handling
 
 ## License

@@ -67,6 +67,12 @@ function validateAuctionInput(input) {
     if (typeof bid.bidAmount !== 'number' || bid.bidAmount <= 0) {
       throwAuctionError(`Bid at index ${index} has invalid bidAmount (must be positive number)`, 'INVALID_BID_AMOUNT');
     }
+    // qualityScore is optional (for backward compat) but if present must be positive number
+    if (bid.qualityScore !== undefined) {
+      if (typeof bid.qualityScore !== 'number' || bid.qualityScore <= 0) {
+        throwAuctionError(`Bid at index ${index} has invalid qualityScore (must be positive number if provided)`, 'INVALID_QUALITY_SCORE');
+      }
+    }
   });
 
   return bids;

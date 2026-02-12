@@ -7,6 +7,7 @@
 /**
  * Finds the winner based on highest bidAmount.
  * Handles ties by selecting the first highest bidder encountered.
+ * (Kept for backward compatibility with basic auction flow.)
  * @param {Array} bids - Validated array of bid objects
  * @returns {object} Winner bid object
  */
@@ -25,6 +26,40 @@ function findHighestBidder(bids) {
   return winner;
 }
 
+/**
+ * Finds the winner based on effective score (bidAmount * qualityScore).
+ * This simulates real-world ad auction ranking (e.g., Google Ads style)
+ * where quality/relevance influences final rank beyond raw bid.
+ * qualityScore should be a number (typically 0.0-1.0 or 1-10); defaults to 1.0 if missing.
+ * Handles ties by selecting first highest.
+ * @param {Array} bids - Validated array of bid objects (with optional qualityScore)
+ * @returns {object} Winner bid object
+ */
+function findHighestEffectiveScoreBidder(bids) {
+  if (!Array.isArray(bids) || bids.length === 0) {
+    // Should not reach here if validation passed, but defensive
+    throw new Error('No bids to evaluate');
+  }
+
+  // Compute effective score for each (bid * quality; default quality=1.0 for backward compat)
+  const scoredBids = bids.map(bid => {
+    const quality = (typeof bid.qualityScore === 'number' && bid.qualityScore > 0) ? bid.qualityScore : 1.0;
+    return {
+      ...bid,
+      effectiveScore: bid.bidAmount * quality
+    };
+  });
+
+  let winner = scoredBids[0];
+  for (let i = 1; i < scoredBids.length; i++) {
+    if (scoredBids[i].effectiveScore > winner.effectiveScore) {
+      winner = scoredBids[i];
+    }
+  }
+  return winner;  // Return original bid (without temp effectiveScore)
+}
+
 module.exports = {
-  findHighestBidder
+  findHighestBidder,
+  findHighestEffectiveScoreBidder
 };

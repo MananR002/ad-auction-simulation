@@ -1,28 +1,33 @@
-const { runAuction } = require('../index');  // Import from main index for full library API
+const { runAuction, runAdvancedAuction } = require('../index');  // Import from main index for full library API
 const { AuctionError } = require('../src/utils/errorHandler');
 const fs = require('fs');
 const path = require('path');
 
+// Sample bids updated to include qualityScore (for advanced tests; backward compat preserved)
 const sampleBids = [
   {
     "id": "adv1",
     "name": "Advertiser A",
-    "bidAmount": 100
+    "bidAmount": 100,
+    "qualityScore": 0.8
   },
   {
     "id": "adv2",
     "name": "Advertiser B",
-    "bidAmount": 150
+    "bidAmount": 150,
+    "qualityScore": 0.9
   },
   {
     "id": "adv3",
     "name": "Advertiser C",
-    "bidAmount": 120
+    "bidAmount": 120,
+    "qualityScore": 1.0
   },
   {
     "id": "adv4",
     "name": "Advertiser D",
-    "bidAmount": 200
+    "bidAmount": 200,
+    "qualityScore": 0.7
   }
 ];
 
@@ -75,5 +80,48 @@ describe('Ad Auction Utility', () => {
     const result = runAuction(fileContent);
     expect(result.winner).toBe('Advertiser D');
     expect(result.bidAmount).toBe(200);
+  });
+
+  // Advanced auction tests (new functionality)
+  test('should select winner by highest effective score (bid * qualityScore) in advanced mode', () => {
+    // In sample: A=80, B=135, C=120, D=140 -> D wins (140)
+    const result = runAdvancedAuction(sampleBids);
+    expect(result.winner).toBe('Advertiser D');
+    expect(result.bidAmount).toBe(200);
+    expect(result.effectiveScore).toBe(140);  // 200 * 0.7
+    expect(result.qualityScore).toBe(0.7);
+  });
+
+  test('should accept JSON string in advanced auction', () => {
+    const jsonInput = JSON.stringify(sampleBids);
+    const result = runAdvancedAuction(jsonInput);
+    expect(result.winner).toBe('Advertiser D');
+    expect(result.effectiveScore).toBe(140);
+  });
+
+  test('should throw AuctionError for invalid qualityScore in advanced mode', () => {
+    const invalidBids = [{ id: 'adv1', name: 'A', bidAmount: 100, qualityScore: -0.5 }];
+    expect(() => runAdvancedAuction(invalidBids)).toThrow(AuctionError);
+    expect(() => runAdvancedAuction(invalidBids)).toThrow('invalid qualityScore');
+  });
+
+  test('should default qualityScore to 1.0 in advanced mode for backward compat', () => {
+    const noQualityBids = [
+      { id: 'adv1', name: 'A', bidAmount: 100 },
+      { id: 'adv2', name: 'B', bidAmount: 90 }
+    ];
+    const result = runAdvancedAuction(noQualityBids);
+    expect(result.winner).toBe('A');
+    expect(result.effectiveScore).toBe(100);  // bid * 1.0
+  });
+
+  test('should handle ties in advanced effective score by selecting first', () => {
+    const tieBids = [
+      { id: 'adv1', name: 'A', bidAmount: 100, qualityScore: 1.0 },
+      { id: 'adv2', name: 'B', bidAmount: 50, qualityScore: 2.0 }  // effective=100
+    ];
+    const result = runAdvancedAuction(tieBids);
+    expect(result.winner).toBe('A');
+    expect(result.effectiveScore).toBe(100);
   });
 });
