@@ -1,0 +1,22 @@
+[
+  {
+    "id": "adv1",
+    "name": "Advertiser A",
+    "bidAmount": 100
+  },
+  {
+    "id": "adv2",
+    "name": "Advertiser B",
+    "bidAmount": 150
+  },
+  {
+    "id": "adv3",
+    "name": "Advertiser C",
+    "bidAmount": 120
+  },
+  {
+    "id": "adv4",
+    "name": "Advertiser D",
+    "bidAmount": 200
+  }
+]

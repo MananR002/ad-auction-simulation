@@ -1,0 +1,18 @@
+{
+  "name": "ad-auction-simulation",
+  "version": "1.0.0",
+  "description": "A Node.js utility library for ad-auction system winner selection based on bids and future metrics.",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "demo": "node demo.js",
+    "build": "echo 'No build step required for this library'",
+    "lint": "echo 'No linting configured yet'"
+  },
+  "keywords": ["ad-auction", "bidding", "auction", "advertising", "nodejs"],
+  "author": "AI Coding Agent",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}
